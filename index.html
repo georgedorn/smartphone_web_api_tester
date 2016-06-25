@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html lang="en">
+
+<head>
+<title>Phone API Test</title>
+  <style type="text/css">
+  body {
+    font-family: Georgia, "Times New Roman",
+          Times, serif;
+    font-size: 1.5em;
+  h1 {
+    font-family: Helvetica, Geneva, Arial,
+          SunSans-Regular, sans-serif }
+td {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.5em;
+}
+
+th {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 2em;
+}  </style>
+<script src="//code.jquery.com/jquery-3.0.0.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/json2/20150503/json2.min.js"></script>
+</head>
+
+<body>
+
+<h1>Site probably best used with Firefox OS or at least Firefox on an Android device.</h1>
+
+<table>
+<thead><th>API</th><th>Supported?</th><th>Data</th></thead>
+<tr><td>General Info</td><td id='general_support'>&nbsp;</td><td id='general_data'>&nbsp;</td></tr>
+<tr><td>Battery</td><td id='battery_support'>&nbsp;</td><td id='battery_data'>&nbsp;</td></tr>
+<tr><td>Device Proximity</td><td id='device_proximity_support'>&nbsp;</td><td id='device_proximity_data'>&nbsp;</td></tr>
+<tr><td>User Proximity</td><td id='user_proximity_support'>&nbsp;</td><td id='user_proximity_data'>&nbsp;</td></tr>
+<tr><td>Geolocation</td><td id='geolocation_support'>&nbsp;</td><td id='geolocation_data'>&nbsp;</td></tr>
+<tr><td>Vibration</td><td id='vibrate_support'>&nbsp;</td><td id='vibrate_action'><button id='vibrate_button'>Try</button></td></tr>
+<tr><td>Notifications</td><td id='notifications_support'>&nbsp;</td><td id='notifications_action'><button id='notifications_button'>Try</button></td></tr>
+
+</table>
+
+
+
+
+</body>
+<script language="JavaScript" type="text/javascript">
+
+if (!window.navigator){
+  $('#general_data').html('No window navigator API?');
+} else {
+  $('#general_data').html('window.navigator found');
+}
+
+
+var update_battery_details = function() {
+	var battery = navigator.battery || navigator.webkitBattery || navigator.mozBattery || navigator.msBattery || null;
+	if (battery){
+		$('#battery_support').html('&check;');
+		$('#battery_data').html(dump(battery));
+	} else {
+		$('#battery_support').html('&cross;');
+	}
+}
+
+var update_vibrator_details = function() {
+	var vibrator = navigator.vibrate;
+	if(vibrator){
+		$('#vibrate_support').html('&check;');
+		$('#vibrate_button').click(function () {
+			navigator.vibrate(1000);
+		});
+	} else {
+		$('#vibrate_support').html('&cross;');
+	}
+}
+
+var update_notifications_details = function() {
+	window.notification_permission_requested = false;
+	if ('Notification' in window) {
+		$('#notifications_support').html('&check;');
+		$('#notifications_button').click(send_new_notification);
+	} else {
+		$('#notifications_support').html('&cross;');
+	}
+}
+
+var send_new_notification = function() {
+	Notification.requestPermission(function(){
+		var notification = new Notification('Test notification', {body: 'This is a test notification that you sent yourself.'});
+	}
+	);
+}
+
+var update_device_proximity_details = function() {
+	if ('ondeviceproximity' in window) {
+		$('#device_proximity_support').html('&check;');
+		window.addEventListener('deviceproximity', on_device_proximity);
+	} else {
+		$('#device_proximity_support').html('&cross;');
+	}
+}
+
+var on_device_proximity = function(event) {
+	$('#device_proximity_data').html(dump(event));
+}
+
+var update_user_proximity_details = function() {
+	if ('onuserproximity' in window) {
+		$('#user_proximity_support').html('&check;');
+		window.addEventListener('userproximity', on_user_proximity);
+	} else {
+		$('#user_proximity_support').html('&cross;');
+	}
+}
+
+var on_user_proximity = function(event) {
+	$('#user_proximity_data').html(dump(event));
+}
+
+var update_geolocation_details = function() {
+	if ('geolocation' in window.navigator){
+		$('#geolocation_support').html('&check;');
+		window.navigator.geolocation.getCurrentPosition(geolocation_callback);
+	} else {
+		$('#geolocation_support').html('&cross;');
+	}
+}
+
+var geolocation_callback = function(event) {
+	$('#geolocation_data').html(dump(event));
+}
+
+
+var do_all_the_things = function() {
+	update_battery_details();
+	update_vibrator_details();
+	update_notifications_details();
+	update_device_proximity_details();
+	update_user_proximity_details();
+	update_geolocation_details();
+}
+
+//utility
+function dump2(obj){
+  var out = '';
+  for (var i in obj) {
+      out += i + ": " + obj[i] + "<br>";
+  }
+  return out;
+}
+
+    function dump(o,limit,e,clicked) {
+      var outer = false;
+      if (e===undefined) {
+        dump.o=[];
+        dump.n = function(o) { // get display name for object
+          if (o===undefined) return '<i>undefined</i>';
+          if (o===null) return '<i>null</i>';
+          var c = o.constructor;
+          return '<span style="color:#666"> <i>' + typeof o + '</i> '
+            +(c ? String(c).split('{')[0].substr(8) :'') + '</span> '
+            +'<pre style="display:inline">' + dump.esc(o) + '</pre>' }
+        dump.hp = function(o) { // determine if object has props
+          for (undefined in o) return true; return false; }
+        dump.t = function(e,rhs) { // toggle property list viz
+          var n = rhs ? e.previousSibling : e.nextSibling;
+          var s = n.style;
+          if ((!n.hasData) && s.display == 'none')
+            return dump.load(n);
+          n.hasData = true;
+          s.display = s.display == 'none' ? 'block' : 'none';
+          return false; }
+        dump.load = function(e) { // show non-dumped item
+          e.hasData = true;
+          e.style.display = 'block';
+          dump(dump.o[e.getAttribute('obj')],1,e,true);
+          return false; }
+        dump.esc = function(s) { // html escape
+          return String(s).replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;').replace(/\>/g,'&gt;') }
+        outer = true;
+        e = document.createElement('div');
+        e.style.font = '11px sans-serif'; }
+      if (outer || clicked) {
+        e.val = "";
+        e.write = function(s) {e.val += s}
+        e.flush = function() {e.innerHTML += e.val; e.val = ''} }
+      if (limit===undefined) limit = 3;
+      var tab = '<br/\><a href="#" onclick="return dump.t(this)">'
+        +'<b>{</b></a><div style="margin-left:1em'
+        +(limit ? '' : ';display:none') +'"'
+        +(limit ? '' : 'obj="'+dump.o.length+'" ') +'>';
+      var end = '</div><a href="#" onclick="return dump.t(this,1)">'
+        +'<b>}</b></a><br/\>';
+      if (!limit) {
+        if (!dump.hp(o))
+          return e.write(dump.n(o)+'<br/\>');
+        dump.o.push(o);
+        return e.write(dump.n(o)+tab+end); }
+      if (!clicked) e.write(dump.n(o));
+      var c = 0;
+      for (var p in o) {
+        if ((!clicked) && !c++) e.write(tab);
+        e.write("<b>"+p+"</b> => ");
+        dump(o[p], limit-1, e); }
+      e.write(clicked ? "" : c ? end : "<br/\>");
+      if (outer || clicked) e.flush();
+      if (outer) return e; }
+
+$(document).ready( do_all_the_things );
+
+
+</script>
+
+
+</html>
